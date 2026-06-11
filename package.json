@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test scripts/",
+    "test": "node --test 'scripts/*.test.mjs'",
     "demo": "node fixtures/demo-site/server.mjs"
   }
 }
