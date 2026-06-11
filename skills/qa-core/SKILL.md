@@ -37,7 +37,7 @@ Every run gets `qa/runs/<RUN_ID>/` where `RUN_ID = RUN-$(date +%Y%m%d-%H%M%S)`:
 
 Exactly one of `repro` (behavioral) / `codeRef` (code-level) per finding.
 
-**Evidence rule (non-negotiable):** no screenshot + no repro/codeRef ⇒ the merge script discards the finding. Take the screenshot at the moment the bug is visible.
+**Evidence rule (non-negotiable):** a finding missing its screenshot, or missing exactly-one-of repro/codeRef, is discarded by the merge script. Take the screenshot at the moment the bug is visible.
 
 **Severity guide:** critical = data loss / payment / app unusable · high = core flow broken · medium = feature broken with workaround · low = cosmetic/minor · info = observation.
 
@@ -55,5 +55,5 @@ Before any click/type: `highlight <ref> --style="outline: 3px solid #e85d26"`, `
 
 ## Scripts
 
-- Merge raw findings → `node ${CLAUDE_PLUGIN_ROOT}/scripts/findings.mjs merge <runDir>`
+- Merge raw findings → `node ${CLAUDE_PLUGIN_ROOT}/scripts/findings.mjs merge <runDir>` — refuses to overwrite an existing `findings.json` (protects verifier/fix-loop state); add `--force` only when intentionally re-merging from raw
 - Render report → `node ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.mjs <runDir>`
