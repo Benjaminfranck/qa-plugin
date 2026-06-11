@@ -23,11 +23,11 @@ If config is NOT_CONFIGURED: stop and suggest `/qa:init`. (Exception: $ARGUMENTS
 
 ## 3. Plan territories
 
-Split config `routes` into 1–3 groups by URL prefix/section (≤3 explorers; 1 explorer if ≤4 routes). `--focus=<area>` ⇒ only matching routes. The mobile-tester gets: home + nav + routes of `critical` flows.
+Split config `routes` into 1–3 groups by URL prefix/section (≤3 explorers; 1 explorer if ≤4 routes). `--focus=<area>` ⇒ only matching routes. The mobile-tester gets: home + nav + routes of `critical` flows. The breaker gets: all form-bearing routes + routes of critical flows.
 
 ## 4. Dispatch workers — ALL in ONE message (parallel)
 
-One Agent call per explorer group (`qa:explorer`) + one for `qa:mobile-tester`. Dispatch prompt template (fill every placeholder):
+One Agent call per explorer group (`qa:explorer`) + one `qa:mobile-tester` + one `qa:breaker`. Dispatch prompt template (fill every placeholder):
 
 ```
 Test this app. Parameters:
@@ -36,7 +36,7 @@ Test this app. Parameters:
 - TARGET: <target url>
 - ROUTES: <list>
 - RUN_DIR: <absolute path to $RUN_DIR>
-- WORKER_ID: <explorer-1 | explorer-2 | explorer-3 | mobile-1>
+- WORKER_ID: <explorer-1 | explorer-2 | explorer-3 | mobile-1 | breaker-1>
 - RUN_ID: <RUN_ID>
 - FLOWS: <relevant flows from config, with descriptions>
 - IGNORE: <ignore rules from config>
