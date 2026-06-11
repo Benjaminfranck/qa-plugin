@@ -34,6 +34,9 @@ export default defineConfig({
       name: 'mobile-iphone-14',
       use: {
         ...devices['iPhone 14'],
+        // chromium-only framework: emulate iPhone dimensions/UA on chromium
+        // (the iPhone descriptor defaults to webkit, which we don't install)
+        browserName: 'chromium',
         ...(hasAuth ? { storageState: 'qa/.auth/user.json' } : {}),
       },
       ...(hasAuth ? { dependencies: ['setup'] } : {}),
