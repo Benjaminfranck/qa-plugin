@@ -1,0 +1,8 @@
+{
+  "name": "qa",
+  "displayName": "QA Framework",
+  "version": "0.1.0",
+  "description": "Playwright-based QA automation: exploratory agent sessions, evidence-backed findings, HTML reports, and a verified fix loop.",
+  "author": { "name": "Benjamin Franck" },
+  "keywords": ["qa", "testing", "playwright", "automation"]
+}
