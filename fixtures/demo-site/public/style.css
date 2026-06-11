@@ -1,0 +1,11 @@
+body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a2e; }
+nav { display: flex; gap: 1rem; padding: 1rem 2rem; background: #1a1a2e; }
+nav a { color: #fff; text-decoration: none; }
+#burger { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; }
+main { padding: 2rem; max-width: 720px; margin: 0 auto; }
+.cta { background: #e85d26; color: #fff; border: none; padding: .75rem 1.5rem; font-size: 1rem; cursor: pointer; }
+.faint { color: #c9c9c9; } /* planted: low-contrast text on white */
+@media (max-width: 600px) {
+  nav a { display: none; }
+  #burger { display: block; }
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pricing — DemoCo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <button id="burger" aria-label="Menu">☰</button>
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/pricing">Pricing</a>
+  </nav>
+  <main>
+    <h1>Pricing</h1>
+    <p class="faint">Fine print nobody can read (low contrast).</p>
+    <form id="contact">
+      <input type="email" id="email" placeholder="Email">
+      <button class="cta" type="submit">Get quote</button>
+    </form>
+  </main>
+  <script>
+    document.getElementById('contact').addEventListener('submit', (e) => {
+      e.preventDefault();
+      // planted: no validation — empty email "succeeds" silently, no feedback at all
+      fetch('/api/quote', { method: 'POST' }); // planted: /api/quote -> 404
+    });
+  </script>
+</body>
+</html>

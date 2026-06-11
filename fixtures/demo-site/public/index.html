@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DemoCo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <button id="burger" aria-label="Menu">☰</button>
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/careers">Careers</a>
+  </nav>
+  <main>
+    <h1>Welcome to DemoCo</h1>
+    <p>We make demos. <img src="/img/team.png" alt="Our team" width="300"></p>
+    <button class="cta" id="signup">Sign up</button>
+  </main>
+  <script>
+    console.error('boom: analytics config missing');
+    document.getElementById('signup').addEventListener('click', () => {
+      window.startSignup(); // planted: undefined function -> uncaught TypeError on click
+    });
+    // planted: #burger has no click handler -> mobile menu never opens
+  </script>
+</body>
+</html>
