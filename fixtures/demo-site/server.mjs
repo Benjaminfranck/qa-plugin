@@ -4,6 +4,7 @@ import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
+const port = Number(process.env.PORT ?? 4173);
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 createServer((req, res) => {
@@ -18,4 +19,4 @@ createServer((req, res) => {
   }
   res.writeHead(200, { 'content-type': types[extname(f)] ?? 'application/octet-stream' });
   res.end(readFileSync(f));
-}).listen(4173, () => console.log('demo site: http://localhost:4173'));
+}).listen(port, () => console.log(`demo site: http://localhost:${port}`));
