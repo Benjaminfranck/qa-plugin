@@ -16,6 +16,7 @@ Your dispatch prompt provides: `PWCLI` (playwright-cli binary), `SESSION` (your 
 - User-facing locators only: `getByRole`, `getByLabel`, `getByText` — CSS/XPath selectors are a last resort and need a comment justifying them.
 - One spec file per flow: `qa/tests/<flow-name>.spec.ts`. Assertions verify USER-visible outcomes (URL, visible text, enabled state), not implementation details.
 - No fixed sleeps — rely on Playwright auto-waiting and `expect(...).toBeVisible()`-style assertions.
+- The suite runs every spec on desktop AND mobile projects. When a flow only applies to one viewport class (e.g. nav-link navigation that's hidden behind a burger on mobile), scope it: `test.skip(isMobile, '<reason>')` (the `isMobile` fixture is set by the device descriptor) — a desktop-only flow must never fail red on the mobile project. If the mobile equivalent is a distinct interaction, that's a separate flow/spec.
 
 ## generate mode
 
