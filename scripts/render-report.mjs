@@ -1,0 +1,106 @@
+// Renders qa/runs/<RUN_ID>/findings.json into a self-contained report.html.
+// Usage: node render-report.mjs <runDir>
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import process from 'node:process';
+
+const SEVERITY_COLORS = { critical: '#ff4d4f', high: '#e85d26', medium: '#e8b126', low: '#4dabf7', info: '#8a8f98' };
+
+export function escapeHtml(s) {
+  return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+function readJson(p, fallback) {
+  try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return fallback; }
+}
+
+function embedImage(runDir, rel) {
+  try {
+    const buf = readFileSync(resolve(runDir, rel));
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch { return null; }
+}
+
+function loadCoverage(runDir) {
+  const dir = join(runDir, 'coverage');
+  if (!existsSync(dir)) return { routes: [], working: [] };
+  const routes = new Set(); const working = new Set();
+  for (const n of readdirSync(dir).filter(n => n.endsWith('.json'))) {
+    const c = readJson(join(dir, n), {});
+    (c.routesVisited ?? []).forEach(r => routes.add(r));
+    (c.working ?? []).forEach(w => working.add(w));
+  }
+  return { routes: [...routes], working: [...working] };
+}
+
+function findingCard(runDir, f) {
+  const img = f.evidence?.screenshot ? embedImage(runDir, f.evidence.screenshot) : null;
+  const color = SEVERITY_COLORS[f.severity] ?? '#8a8f98';
+  return `<article class="card">
+  <header>
+    <span class="badge" style="background:${color}">${escapeHtml(f.severity)}</span>
+    <span class="badge outline">${escapeHtml(f.source)}</span>
+    ${f.verified ? '<span class="badge verified">verified</span>' : '<span class="badge outline">unverified</span>'}
+    <span class="badge outline">${escapeHtml(f.status ?? 'open')}</span>
+    <h3>${escapeHtml(f.title)}</h3>
+    <code>${escapeHtml(f.url)}${f.viewport ? ' · ' + escapeHtml(f.viewport) : ''}</code>
+  </header>
+  ${f.repro ? `<ol class="repro">${f.repro.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>` : ''}
+  ${f.codeRef ? `<p><code>${escapeHtml(f.codeRef)}</code></p>` : ''}
+  ${f.evidence?.console?.length ? `<pre>${escapeHtml(f.evidence.console.join('\n'))}</pre>` : ''}
+  ${f.evidence?.network?.length ? `<pre>${escapeHtml(f.evidence.network.map(n => `${n.status} ${n.url}`).join('\n'))}</pre>` : ''}
+  ${img ? `<img src="${img}" alt="evidence screenshot" loading="lazy">` : ''}
+</article>`;
+}
+
+export function renderReport(runDir) {
+  const { findings = [], dropped = [] } = readJson(join(runDir, 'findings.json'), {});
+  const meta = readJson(join(runDir, 'run.json'), {});
+  const cov = loadCoverage(runDir);
+  const counts = {};
+  for (const f of findings) counts[f.severity] = (counts[f.severity] ?? 0) + 1;
+  const metric = (label, value) => `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>QA Report — ${escapeHtml(meta.runId ?? runDir)}</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#101218;color:#e6e8ee;margin:0;padding:2rem;max-width:960px;margin-inline:auto}
+  h1{font-size:1.4rem} h3{margin:.5rem 0 .25rem}
+  .metrics{display:flex;gap:1rem;margin:1.5rem 0;flex-wrap:wrap}
+  .metric{background:#1a1d27;border-radius:8px;padding:1rem 1.5rem;text-align:center}
+  .metric strong{display:block;font-size:1.6rem}
+  .card{background:#1a1d27;border-radius:8px;padding:1rem 1.5rem;margin:1rem 0}
+  .badge{display:inline-block;padding:.1rem .5rem;border-radius:4px;font-size:.75rem;color:#fff;margin-right:.35rem;text-transform:uppercase}
+  .badge.outline{background:none;border:1px solid #3a3f4f;color:#aab}
+  .badge.verified{background:#2f9e44}
+  pre{background:#0c0e13;padding:.75rem;border-radius:6px;overflow-x:auto;font-size:.8rem}
+  img{max-width:100%;border-radius:6px;margin-top:.5rem;border:1px solid #2a2f3d}
+  .repro{font-size:.9rem} code{color:#9ad}
+  .works li{color:#9c9} footer{margin-top:2rem;color:#667;font-size:.8rem}
+</style></head><body>
+<h1>QA Report — ${escapeHtml(meta.runId ?? '')}</h1>
+<p><code>${escapeHtml(meta.target ?? '')}</code> · ${escapeHtml(meta.startedAt ?? '')}</p>
+<div class="metrics">
+  ${metric('pages tested', cov.routes.length)}
+  ${metric('findings', findings.length)}
+  ${metric('critical/high', (counts.critical ?? 0) + (counts.high ?? 0))}
+  ${metric('verified', findings.filter(f => f.verified).length)}
+  ${metric('discarded (no evidence)', dropped.length)}
+</div>
+<h2>Findings</h2>
+${findings.length ? findings.map(f => findingCard(runDir, f)).join('\n') : '<p>No findings. 🎉</p>'}
+<h2>What works</h2>
+<ul class="works">${cov.working.map(w => `<li>${escapeHtml(w)}</li>`).join('') || '<li>—</li>'}</ul>
+${dropped.length ? `<h2>Discarded (failed evidence rule)</h2><pre>${escapeHtml(JSON.stringify(dropped, null, 2))}</pre>` : ''}
+<footer>Generated by the qa plugin · Claude Code</footer>
+</body></html>`;
+  const out = join(runDir, 'report.html');
+  writeFileSync(out, html);
+  return out;
+}
+
+if (process.argv[1]?.endsWith('render-report.mjs')) {
+  const runDir = process.argv[2];
+  if (!runDir) { console.error('usage: node render-report.mjs <runDir>'); process.exit(1); }
+  console.log(renderReport(runDir));
+}
