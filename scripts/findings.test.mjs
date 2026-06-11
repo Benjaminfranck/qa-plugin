@@ -127,3 +127,18 @@ test('CLI succeeds with --force when findings.json already exists', () => {
   const out = JSON.parse(readFileSync(join(dir, 'findings.json'), 'utf8'));
   assert.equal(out.findings.length, 1);
 });
+
+test('mergeFindings trustVerified option preserves producer verified/status', () => {
+  const f = { ...base, verified: true, status: 'open' };
+  const { findings } = mergeFindings([[f]], { trustVerified: true });
+  assert.equal(findings[0].verified, true);
+});
+
+test('CLI merge --trust-verified preserves verified', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qa-run-'));
+  mkdirSync(join(dir, 'raw'));
+  writeFileSync(join(dir, 'raw', 'suite.json'), JSON.stringify([{ ...base, verified: true }]));
+  execFileSync('node', [FINDINGS_MJS, 'merge', dir, '--trust-verified']);
+  const out = JSON.parse(readFileSync(join(dir, 'findings.json'), 'utf8'));
+  assert.equal(out.findings[0].verified, true);
+});

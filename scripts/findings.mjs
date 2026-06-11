@@ -30,7 +30,7 @@ export function dedupeKey(f) {
   return [f.url, f.viewport ?? 'desktop', String(f.title).toLowerCase().trim()].join('|');
 }
 
-export function mergeFindings(lists) {
+export function mergeFindings(lists, opts = {}) {
   const seen = new Map();
   const dropped = [];
   for (const f of lists.flat()) {
@@ -39,8 +39,13 @@ export function mergeFindings(lists) {
     const key = dedupeKey(f);
     const existing = seen.get(key);
     if (!existing) {
-      // Spread f first, then override verified/status so producers cannot smuggle verifier state
-      seen.set(key, { ...f, verified: false, status: 'open' });
+      if (opts.trustVerified) {
+        // trustVerified: seed with defaults, then let producer values win
+        seen.set(key, { verified: false, status: 'open', ...f });
+      } else {
+        // Spread f first, then override verified/status so producers cannot smuggle verifier state
+        seen.set(key, { ...f, verified: false, status: 'open' });
+      }
       continue;
     }
     existing.duplicates = [...(existing.duplicates ?? []), f.id];
@@ -76,7 +81,7 @@ function cliMerge(runDir, force) {
       }
     });
 
-  const { findings, dropped: mergeDropped } = mergeFindings(lists);
+  const { findings, dropped: mergeDropped } = mergeFindings(lists, { trustVerified: process.argv.includes('--trust-verified') });
   const allDropped = [...dropped, ...mergeDropped];
   findings.sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));
   writeFileSync(outFile, JSON.stringify({ findings, dropped: allDropped }, null, 2));
