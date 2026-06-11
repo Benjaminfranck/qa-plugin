@@ -1,0 +1,13 @@
+{
+  "name": "{{NAME}}",
+  "targets": {
+    "local": { "command": "{{DEV_COMMAND}}", "url": "{{LOCAL_URL}}", "readyTimeout": 120 }
+  },
+  "defaultTarget": "local",
+  "auth": { "mode": "none" },
+  "viewports": ["desktop", "iphone-14"],
+  "routes": ["/"],
+  "flows": [],
+  "visual": { "mask": [], "maxDiffPixelRatio": 0.01 },
+  "ignore": { "consoleWarnings": [], "urls": [] }
+}
