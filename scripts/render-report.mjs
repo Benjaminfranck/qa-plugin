@@ -1,7 +1,8 @@
 // Renders qa/runs/<RUN_ID>/findings.json into a self-contained report.html.
 // Usage: node render-report.mjs <runDir>
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 
 const SEVERITY_COLORS = { critical: '#ff4d4f', high: '#e85d26', medium: '#e8b126', low: '#4dabf7', info: '#8a8f98' };
@@ -17,7 +18,10 @@ function readJson(p, fallback) {
 
 function embedImage(runDir, rel) {
   try {
-    const buf = readFileSync(resolve(runDir, rel));
+    const abs = resolve(runDir, rel);
+    const base = resolve(runDir);
+    if (!abs.startsWith(base + sep)) return null;
+    const buf = readFileSync(abs);
     return `data:image/png;base64,${buf.toString('base64')}`;
   } catch { return null; }
 }
@@ -36,7 +40,7 @@ function loadCoverage(runDir) {
 
 function findingCard(runDir, f) {
   const img = f.evidence?.screenshot ? embedImage(runDir, f.evidence.screenshot) : null;
-  const color = SEVERITY_COLORS[f.severity] ?? '#8a8f98';
+  const color = Object.hasOwn(SEVERITY_COLORS, f.severity) ? SEVERITY_COLORS[f.severity] : '#8a8f98';
   return `<article class="card">
   <header>
     <span class="badge" style="background:${color}">${escapeHtml(f.severity)}</span>
@@ -99,7 +103,8 @@ ${dropped.length ? `<h2>Discarded (failed evidence rule)</h2><pre>${escapeHtml(J
   return out;
 }
 
-if (process.argv[1]?.endsWith('render-report.mjs')) {
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
   const runDir = process.argv[2];
   if (!runDir) { console.error('usage: node render-report.mjs <runDir>'); process.exit(1); }
   console.log(renderReport(runDir));

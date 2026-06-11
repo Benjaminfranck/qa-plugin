@@ -39,7 +39,7 @@ test('renderReport writes self-contained report.html', () => {
   assert.ok(html.includes('critical'));                        // severity badge
   assert.ok(html.includes('TypeError'));                       // console evidence
   assert.ok(html.includes('About page renders correctly'));    // what-works from coverage/
-  assert.ok(html.includes('2'));                               // pages tested metric
+  assert.ok(html.includes('<strong>2</strong>'));              // pages tested metric (tightened)
   assert.ok(!html.includes('<script>alert(1)</script>'));      // titles are escaped
   assert.ok(html.includes('&lt;script&gt;'));
 });
@@ -53,5 +53,44 @@ test('renders without coverage/ or run.json (graceful)', () => {
   writeFileSync(join(dir, 'findings.json'), JSON.stringify({ findings: [], dropped: [] }));
   const out = renderReport(dir);
   const html = readFileSync(out, 'utf8');
-  assert.ok(html.includes('0'));   // zero findings still renders
+  assert.ok(html.includes('<strong>0</strong>'));   // zero findings still renders (tightened)
+});
+
+test('embedImage: path traversal screenshot is not embedded', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qa-report-'));
+  mkdirSync(join(dir, 'coverage'), { recursive: true });
+  // Create the target file OUTSIDE the run dir (in tmpdir itself)
+  const outsidePath = join(tmpdir(), 'outside.png');
+  writeFileSync(outsidePath, PNG);
+  writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId: 'TRAVERSAL-TEST' }));
+  writeFileSync(join(dir, 'findings.json'), JSON.stringify({
+    findings: [{
+      id: 'T-001', source: 'explore', severity: 'high',
+      title: 'Traversal test', url: '/',
+      repro: [], verified: false, status: 'open',
+      evidence: { screenshot: '../outside.png' }
+    }],
+    dropped: []
+  }));
+  const out = renderReport(dir);
+  const html = readFileSync(out, 'utf8');
+  assert.ok(!html.includes('data:image/png;base64,'), 'traversal screenshot must NOT be embedded as base64');
+});
+
+test('network evidence is rendered and escaped', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qa-report-'));
+  writeFileSync(join(dir, 'findings.json'), JSON.stringify({
+    findings: [{
+      id: 'N-001', source: 'explore', severity: 'high',
+      title: 'Network test', url: '/',
+      repro: [], verified: false, status: 'open',
+      evidence: { network: [{ url: 'https://x.test/<img src=x>', status: 500 }] }
+    }],
+    dropped: []
+  }));
+  const out = renderReport(dir);
+  const html = readFileSync(out, 'utf8');
+  assert.ok(html.includes('500'), 'status code 500 must appear in report');
+  assert.ok(html.includes('&lt;img src=x&gt;'), 'XSS payload must be HTML-escaped');
+  assert.ok(!html.includes('<img src=x>'), 'raw XSS payload must NOT appear unescaped');
 });
