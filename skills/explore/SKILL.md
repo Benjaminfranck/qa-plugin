@@ -8,7 +8,7 @@ Project config: !`cat qa/qa.config.json 2>/dev/null || echo "NOT_CONFIGURED"`
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/qa-core/SKILL.md` first for shared conventions. You are the ORCHESTRATOR: you plan, dispatch, merge, verify, report. You do not browse the app yourself.
 
-If config is NOT_CONFIGURED: stop and suggest `/qa:init`. (Exception: $ARGUMENTS contains a URL ⇒ run a config-less session against it with routes discovered from the homepage, defaults for everything else.)
+If config is NOT_CONFIGURED: stop and suggest `/qa:init`. (Exception: $ARGUMENTS contains a URL ⇒ run a config-less session against it. Discover routes without browsing: `curl -sL <url> | grep -oE 'href="[^"]+"'`, keep same-origin paths, dedupe, cap at 10; defaults for everything else.)
 
 ## 1. Pre-flight (cheap checks before any subagent)
 
@@ -36,7 +36,7 @@ Test this app. Parameters:
 - TARGET: <target url>
 - ROUTES: <list>
 - RUN_DIR: <absolute path to $RUN_DIR>
-- WORKER_ID: <explorer-1 | explorer-2 | mobile-1>
+- WORKER_ID: <explorer-1 | explorer-2 | explorer-3 | mobile-1>
 - RUN_ID: <RUN_ID>
 - FLOWS: <relevant flows from config, with descriptions>
 - IGNORE: <ignore rules from config>
