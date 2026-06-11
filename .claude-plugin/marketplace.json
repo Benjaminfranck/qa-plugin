@@ -1,0 +1,11 @@
+{
+  "name": "qa-framework",
+  "owner": { "name": "Benjamin Franck" },
+  "plugins": [
+    {
+      "name": "qa",
+      "source": ".",
+      "description": "Playwright-based QA automation: exploratory agent sessions, evidence-backed findings, HTML reports, and a verified fix loop."
+    }
+  ]
+}
