@@ -1,7 +1,8 @@
 // Findings schema utilities for the qa plugin. Zero dependencies.
 // Schema: docs/superpowers/specs/2026-06-11-qa-framework-design.md §6
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 
 export const SOURCES = ['explore', 'test', 'audit-a11y', 'audit-perf', 'audit-links', 'audit-seo', 'audit-design', 'visual'];
@@ -24,6 +25,7 @@ export function validateFinding(f) {
   return { valid: errors.length === 0, errors };
 }
 
+// title-equality dedupe is intentionally literal; paraphrased duplicates are caught later by the verifier
 export function dedupeKey(f) {
   return [f.url, f.viewport ?? 'desktop', String(f.title).toLowerCase().trim()].join('|');
 }
@@ -37,7 +39,8 @@ export function mergeFindings(lists) {
     const key = dedupeKey(f);
     const existing = seen.get(key);
     if (!existing) {
-      seen.set(key, { verified: false, status: 'open', ...f });
+      // Spread f first, then override verified/status so producers cannot smuggle verifier state
+      seen.set(key, { ...f, verified: false, status: 'open' });
       continue;
     }
     existing.duplicates = [...(existing.duplicates ?? []), f.id];
@@ -48,20 +51,45 @@ export function mergeFindings(lists) {
   return { findings: [...seen.values()], dropped };
 }
 
-function cliMerge(runDir) {
+function cliMerge(runDir, force) {
   const rawDir = join(runDir, 'raw');
+  if (!existsSync(rawDir)) {
+    process.stderr.write(`error: ${rawDir} does not exist\n`);
+    process.exit(1);
+  }
+
+  const outFile = join(runDir, 'findings.json');
+  if (!force && existsSync(outFile)) {
+    process.stderr.write('findings.json exists; re-run with --force to overwrite\n');
+    process.exit(1);
+  }
+
+  const dropped = [];
   const lists = readdirSync(rawDir)
     .filter(n => n.endsWith('.json'))
-    .map(n => JSON.parse(readFileSync(join(rawDir, n), 'utf8')));
-  const { findings, dropped } = mergeFindings(lists);
+    .map(n => {
+      try {
+        return JSON.parse(readFileSync(join(rawDir, n), 'utf8'));
+      } catch {
+        dropped.push({ file: n, errors: ['unparseable JSON'] });
+        return [];
+      }
+    });
+
+  const { findings, dropped: mergeDropped } = mergeFindings(lists);
+  const allDropped = [...dropped, ...mergeDropped];
   findings.sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));
-  writeFileSync(join(runDir, 'findings.json'), JSON.stringify({ findings, dropped }, null, 2));
-  console.log(`merged: ${findings.length} findings; dropped (evidence rule): ${dropped.length}`);
-  if (dropped.length) console.log(JSON.stringify(dropped, null, 2));
+  writeFileSync(outFile, JSON.stringify({ findings, dropped: allDropped }, null, 2));
+  console.log(`merged: ${findings.length} findings; dropped (evidence rule): ${allDropped.length}`);
+  if (allDropped.length) console.log(JSON.stringify(allDropped, null, 2));
 }
 
-if (process.argv[1]?.endsWith('findings.mjs')) {
-  const [cmd, runDir] = process.argv.slice(2);
-  if (cmd === 'merge' && runDir) cliMerge(runDir);
-  else { console.error('usage: node findings.mjs merge <runDir>'); process.exit(1); }
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  const args = process.argv.slice(2);
+  const force = args.includes('--force');
+  const positional = args.filter(a => !a.startsWith('--'));
+  const [cmd, runDir] = positional;
+  if (cmd === 'merge' && runDir) cliMerge(runDir, force);
+  else { console.error('usage: node findings.mjs merge <runDir> [--force]'); process.exit(1); }
 }
