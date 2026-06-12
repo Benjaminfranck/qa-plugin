@@ -2,7 +2,7 @@
 
 > Autonomous, **evidence-gated** QA for any web app. Parallel browser agents explore, break, and audit your site; **every finding is independently reproduced in a fresh browser before it reaches the report.** Install once, onboard any project with `/qa:init`.
 
-Playwright-based QA automation, reusable across projects. Install the plugin once; onboard any project with `/qa:init`. Spec: `docs/superpowers/specs/2026-06-11-qa-framework-design.md`. All three build phases validated against the fixture pilot (see `docs/superpowers/plans/*-phase-{1,2,3}.md` DoD results).
+Playwright-based QA automation, reusable across projects. Install the plugin once; onboard any project with `/qa:init`. All three build phases are validated against the fixture pilot — 29 unit/integration tests and a demo site with 8 planted bugs (see **Dev** below).
 
 ### The engineering, not the autocomplete
 
