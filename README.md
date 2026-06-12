@@ -1,6 +1,18 @@
 # qa — a Claude Code QA plugin
 
+> Autonomous, **evidence-gated** QA for any web app. Parallel browser agents explore, break, and audit your site; **every finding is independently reproduced in a fresh browser before it reaches the report.** Install once, onboard any project with `/qa:init`.
+
 Playwright-based QA automation, reusable across projects. Install the plugin once; onboard any project with `/qa:init`. Spec: `docs/superpowers/specs/2026-06-11-qa-framework-design.md`. All three build phases validated against the fixture pilot (see `docs/superpowers/plans/*-phase-{1,2,3}.md` DoD results).
+
+### The engineering, not the autocomplete
+
+The hard part of agentic QA isn't getting a model to click around — it's stopping it from reporting confident nonsense. This plugin is built around a few deliberate decisions that make agent output *trustworthy*:
+
+- **A single findings contract** every producer emits and every consumer reads — so agents, deterministic audit scripts, suite reporters, and visual diffs all flow through one pipeline.
+- **An evidence rule** that discards any finding without a screenshot + repro/codeRef before it can reach a report.
+- **A verifier gate** that re-runs agent-claimed bugs in a clean browser and throws out the ones that don't reproduce.
+
+Those decisions are the point. They were designed and architected by [Benjamin Franck](https://github.com/Benjaminfranck) and built at speed by driving Anthropic's **Fable 5** — frontier models make the output *fast*; the architecture makes it *reliable*.
 
 ## Commands
 
